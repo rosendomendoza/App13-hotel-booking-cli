@@ -1,6 +1,7 @@
 import pandas as pd
 
 #df = pd.read_csv("hotels.csv", dtype={"id": str})
+df_cards = pd.read_csv("cards.csv", dtype=str).to_dict(orient="records")
 
 
 class Hotel():
@@ -58,19 +59,36 @@ class Database():
 database = Database("hotels.csv")
 df = database.open()
 
+class CreditCard:
+    def __init__(self, number):
+        self.number = number
+
+    def validate(self, expiration, holder, cvc):
+        credit_card = {'number': self.number, 'expiration': expiration,
+                       'holder': holder, 'cvc': cvc}
+        if credit_card in df_cards:
+            return True
+        else:
+            return False
+
 print(df)
 hotel_ID = input("Enter Hotel id:")
 
 if database.hotel_exist(df, hotel_ID):
     hotel = Hotel(hotel_ID)
+    credit_card = CreditCard("1234")
 
-    if hotel.availability():
-        hotel.book()
-        customer_name = input("Enter your name: ")
-        reservation_ticket = ReservationTicket(customer_name, hotel)
-        print(reservation_ticket.generate())
+    if (credit_card.validate("12/26", "JOHN SMITH", "123")):
+
+        if hotel.availability():
+            hotel.book()
+            customer_name = input("Enter your name: ")
+            reservation_ticket = ReservationTicket(customer_name, hotel)
+            print(reservation_ticket.generate())
+        else:
+            msg = f'The Hotel "{hotel.name}" in "{hotel.city}" is NOT Free'
+            print(msg)
     else:
-        msg = f'The Hotel "{hotel.name}" in "{hotel.city}" is NOT Free'
-        print(msg)
+        input("There was a problem with your payment...")
 else:
     print(f"Hotel id: {hotel_ID} is not registered. Try again...")
