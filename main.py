@@ -1,7 +1,8 @@
 import pandas as pd
 
-#df = pd.read_csv("hotels.csv", dtype={"id": str})
+# df = pd.read_csv("hotels.csv", dtype={"id": str})
 df_cards = pd.read_csv("cards.csv", dtype=str).to_dict(orient="records")
+df_card_security = pd.read_csv("card_security.csv", dtype=str)
 
 
 class Hotel():
@@ -14,17 +15,16 @@ class Hotel():
         self.capacity = info_hotel["capacity"].squeeze()
         self.available = info_hotel["available"].squeeze()
 
-
     def book(self):
         """Book a hotel by changing  its availability to 'no' """
         self.available = "no"
-        database.update_available(self.hotel_id,"no")
-        #df.loc[df["id"] == self.hotel_id, "available"] = "no"
-        #df.to_csv("hotels.csv", index=False)
+        database.update_available(self.hotel_id, "no")
+        # df.loc[df["id"] == self.hotel_id, "available"] = "no"
+        # df.to_csv("hotels.csv", index=False)
 
     def availability(self):
         """Check if the hotel is available"""
-        #availability = df.loc[df["id"] == self.hotel_id, "available"].squeeze()
+        # availability = df.loc[df["id"] == self.hotel_id, "available"].squeeze()
         return self.available == "yes"
 
 
@@ -42,6 +42,7 @@ class ReservationTicket():
         """
         return ticket
 
+
 class Database():
     def __init__(self, pathfile):
         self.pathfile = pathfile
@@ -51,6 +52,7 @@ class Database():
 
     def hotel_exist(self, df, hotel_id):
         return len(df.loc[df["id"] == hotel_id]) != 0
+
     def update_available(self, hotel_id, new_value):
         df.loc[df["id"] == hotel_id, "available"] = new_value
         df.to_csv(self.pathfile, index=False)
@@ -58,6 +60,7 @@ class Database():
 
 database = Database("hotels.csv")
 df = database.open()
+
 
 class CreditCard:
     def __init__(self, number):
@@ -71,24 +74,41 @@ class CreditCard:
         else:
             return False
 
+
+class SecureCreditCard(CreditCard):
+    def authenticate(self, given_pass):
+        password = df_card_security.loc[
+            df_card_security['number'] == self.number, 'password'].squeeze()
+        return password == given_pass
+
+
 print(df)
 hotel_ID = input("Enter Hotel id:")
 
 if database.hotel_exist(df, hotel_ID):
     hotel = Hotel(hotel_ID)
-    credit_card = CreditCard("1234")
 
-    if (credit_card.validate("12/26", "JOHN SMITH", "123")):
+    if hotel.availability():
+        credit_card = SecureCreditCard("1234567890123456")
 
-        if hotel.availability():
-            hotel.book()
-            customer_name = input("Enter your name: ")
-            reservation_ticket = ReservationTicket(customer_name, hotel)
-            print(reservation_ticket.generate())
+        if credit_card.validate("12/26", "JOHN SMITH", "123"):
+            ccn = credit_card.number
+            ccn = ccn[:3] + '*' * (len(ccn) - 6) + ccn[-3:]
+            print(f"Credit Card Nr. {ccn} was validated...")
+
+            if credit_card.authenticate(given_pass="mypass"):
+                print(f"Credit Card Nr. {ccn} "
+                      f"was authenticated...")
+                hotel.book()
+                customer_name = input("Reservation under (name): ")
+                reservation_ticket = ReservationTicket(customer_name, hotel)
+                print(reservation_ticket.generate())
+            else:
+                print("Credit Card Authentication Error...")
         else:
-            msg = f'The Hotel "{hotel.name}" in "{hotel.city}" is NOT Free'
-            print(msg)
+            input("There was a problem with your payment...")
     else:
-        input("There was a problem with your payment...")
+        msg = f'The Hotel "{hotel.name}" in "{hotel.city}" is NOT Free'
+        print(msg)
 else:
     print(f"Hotel id: {hotel_ID} is not registered. Try again...")
