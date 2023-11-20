@@ -8,6 +8,7 @@ df_card_security = pd.read_csv("card_security.csv", dtype=str)
 class Hotel():
     def __init__(self, hotel_id):
         self.hotel_id = hotel_id
+
         # Load the rest of the hotel information
         info_hotel = df.loc[df["id"] == self.hotel_id]
         self.name = info_hotel["name"].squeeze()
@@ -16,6 +17,7 @@ class Hotel():
         self.available = info_hotel["available"].squeeze()
 
     def book(self):
+
         """Book a hotel by changing  its availability to 'no' """
         self.available = "no"
         database.update_available(self.hotel_id, "no")
@@ -23,6 +25,7 @@ class Hotel():
         # df.to_csv("hotels.csv", index=False)
 
     def availability(self):
+
         """Check if the hotel is available"""
         # availability = df.loc[df["id"] == self.hotel_id, "available"].squeeze()
         return self.available == "yes"
